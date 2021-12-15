@@ -39,7 +39,7 @@ export const SomeComponent: React.VFC = () => {
 
 ある程度の規模のコンポーネントなら `useState` で困らないと思います．が，これが複雑になってくると少し困ります．
 
-### 複雑なコンポーネント
+### 🧵 複雑なコンポーネント
 
 例えば，**都道府県と市町村区を選択する** コンポーネントを考えてみましょう．都道府県のリストはこちら側で持っていますが，**市町村区は国が提供してくれてる API から取得します**．
 
@@ -61,7 +61,7 @@ export const SomeComponent: React.VFC = () => {
 
 これを考慮して，**`useState` を用いてコンポーネントを実装する**とこうなります．
 
-@[codesandbox](https://codesandbox.io/embed/counter-by-setstate-w8h08?fontsize=14&module=%2Fsrc%2Fcounter%2FCounter.tsx&theme=dark&view=editor)
+@[codesandbox](https://codesandbox.io/embed/cityselector-by-setstate-di524?fontsize=14&hidenavigation=1&module=%2Fsrc%2FcitySelector%2Fview.tsx&theme=dark&view=editor)
 :::message
 右にあるハンドルを左にドラッグすると実際のコンポーネントが表示されます．
 :::
@@ -77,7 +77,7 @@ React.useEffect(() => {
   setCities(undefined);
   setSelectedCityIndex(undefined);
 
-  fetchCities(selectedPrefIndex).then((c) => {
+  fetchCities((selectedPrefIndex + 1).toString().padStart(2, "0")).then((c) => {
     setCities(c);
     setSelectedCityIndex(0);
   });
@@ -93,8 +93,8 @@ React.useEffect(() => {
 
  React.useEffect(() => {
 +  clearCityList();
- 
-   fetchCities(selectedPrefIndex).then((cities) => {
+
+   fetchCities((selectedPrefIndex + 1).toString().padStart(2, "0")).then((cities) => {
 +    updateCityList(cities);
    });
  }, [selectedPrefIndex]);
@@ -135,13 +135,13 @@ Reducer はその性質から，**コンポーネントの関数とステート�
 @[codesandbox](https://codesandbox.io/embed/counter-by-setstate-w8h08?fontsize=14&module=%2Fsrc%2Fcounter%2FCounter.tsx&theme=dark&view=editor)
 :::
 
-### ステート管理部分を見てみる
+### 🪄 ステート管理部分を見てみる
 
 @[codesandbox](https://codesandbox.io/embed/counter-by-setreducer-jvjb2?fontsize=14&hidenavigation=1&module=%2Fsrc%2Fcounter%2Fcontroller.ts&theme=dark&view=editor)
 
 コードの上から順に，Reducer パターンに現れる要素を見てみます．
 
-#### State
+#### 📦 State
 State は単純に，コンポーネントが持つ状態を説明しているのみです．
 上記のコードでは，同時に初期状態 (`initialState`) も定義しています．
 
@@ -154,7 +154,7 @@ const initialState: State = {
 };
 ```
 
-#### Action
+#### 📒 Action
 Action はこのように定義されています．
 
 ```tsx:Action の定義
@@ -180,7 +180,7 @@ type Action = { type: string, args: any };
 
 このように，**`type` で計算の種類を定義**して，**`args` でその計算の種類ごとの引数の型を定義**してやることで Action が定義されます．[^6]
 
-#### reducer
+#### 🍳 reducer
 実際の Reducer はこのように実装されています．[^7]
 
 ```tsx:Reducer の実装
@@ -241,7 +241,7 @@ TypeScript はすごいので，**ここまで考えてしっかりと `args` �
 :::
 
 
-#### 構造のまとめ
+#### ✨ 構造のまとめ
 
 まとめると，
 
@@ -251,14 +251,14 @@ TypeScript はすごいので，**ここまで考えてしっかりと `args` �
 
 というのが Reducer パターンの実装の構造のおおまかなまとめになります．
 
-### 表示部分を見てみる
+### 🎨 表示部分を見てみる
 これまで，ステート管理に限定された部分を見てきました．実際にこの Reducer パターンを React の Function Component で使用する際はどのような実装になるのでしょうか．
 
 @[codesandbox](https://codesandbox.io/embed/counter-by-setreducer-jvjb2?fontsize=14&hidenavigation=1&module=%2Fsrc%2Fcounter%2Fview.tsx&theme=dark&view=editor)
 
 このようになります．同じように上から構造を見ていきます．
 
-#### `useReducer`
+#### 🙋 `useReducer`
 ```tsx
 const [state, dispatch] = React.useReducer(reducer, initialState);
 ```
@@ -266,7 +266,7 @@ const [state, dispatch] = React.useReducer(reducer, initialState);
 `useReducer` は **Function Component で Reducer パターンを利用する**ときに用いられるフックです．
 `reducer` (関数) と `initialState` (初期状態) を渡すことで，**現在の状態が保存される `state`** と **"dispatch" を行う関数 `dispatch`** の 2 つをもらうことができます．
 
-#### `dispatch`
+#### 🚀 `dispatch`
 ```tsx
 // dispatch({ type: "DECREMENT", args: { delta: 1 } });
 dispatch({
@@ -283,7 +283,7 @@ Dispatch は，**現在の state と，`type` 及び `args` を持つ "Action" �
 
 勘のいい人は，「あれ? **state 渡してないけど**」ということに気づくかもしれません．実は，**dispatch() は自動で現在の state を Action と一緒に reducer に送ってくれます**．なので，開発者は Action を渡せば自動で state も含めた Dispatch を行ってくれる…ということになります．
 
-#### 構造のまとめ
+#### ✨ 構造のまとめ
 
 まとめると，
 
@@ -294,7 +294,7 @@ Dispatch は，**現在の state と，`type` 及び `args` を持つ "Action" �
 
 というのが Reducer を `useReducer` を用いて Function Component から使用する際の構造のまとめです．
 
-### Reducer パターンの動きをトレースしてみる
+### 🔬 Reducer パターンの動きをトレースしてみる
 ここで，ボタンを押されたときの Reducer パターンの動作をトレースしてみます．[別タブで CodeSandbox を開いていただくといいかもしれません．](https://codesandbox.io/s/counter-by-setreducer-jvjb2?file=/src/counter/view.tsx)
 
 :::message
@@ -357,8 +357,8 @@ reducer 関数の中に鎮座していたのは `switch` です．reducer は **
 
 というわけで，無事に `{ count: 5 }` は `{ count: 6 }` に更新され，表示上のカウントも 5 から 6 に増えました．めでたしめでたし．
 
-# 複雑なコンポーネントを Reducer で実装してみる
-Reducer パターンを導入する前 (PC で見ている方は，右の「**複雑なコンポーネント**」に飛んでみると参照できます) に提示したコンポーネントを，Reducer パターンで実装してみましょう．
+# 🧵 複雑なコンポーネントを Reducer で実装してみる
+Reducer パターンを導入する前に提示したコンポーネントを，Reducer パターンで実装してみましょう．
 管理する State の内容などは特に setState バージョンと変化はありません．
 
 @[codesandbox](https://codesandbox.io/embed/cityselector-by-setreducer-cmibo?fontsize=14&hidenavigation=1&module=%2Fsrc%2FcitySelector%2Fview.tsx&theme=dark&view=editor)
@@ -370,7 +370,7 @@ Reducer パターンを導入する前 (PC で見ている方は，右の「**�
 Reducer パターンの別の要素である「Middleware」を用いると，このような非同期処理の操作も Reducer パターンに入れ込むことができ，View のコードがより見やすくなりますが，今回は `useReducer` の導入に留めたかったのでこのような形になりました．そのうち Middleware についての記事も書くかもしれません．
 :::
 
-# まとめ
+# 📝 まとめ
 ### `useReducer` のうれしいところ
 
 - **View から愚直なステート操作のロジックを取り除ける!**
@@ -392,7 +392,7 @@ Reducer パターンの別の要素である「Middleware」を用いると，�
 
 - **`useReducer` フック**は **dispatch 周りの面倒を見てくれる**ので便利!
 
-# おわりに
+# 👋 おわりに
 初めての技術記事で至らぬ点が多すぎると思いますが，ここまで読んでくださりありがとうございました!
 なにかご提案やマサカリがあれば飛ばしてくださると勉強になるのでぜひよろしくお願いします 🙏
 
