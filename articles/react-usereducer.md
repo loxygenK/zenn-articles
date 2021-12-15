@@ -5,10 +5,12 @@ type: "tech" # tech: 技術記事 / idea: アイデア
 topics:
   - react
   - reducer
+  - typescript
 published: false
 ---
 
-フライさんです．限界開発鯖アドベントカレンダーです．
+フライさんです．
+限界開発鯖アドベントカレンダーの 16 日目の記事です．[15 日目は Saigyo_HBK さんの YOLOX+motpyで始めるMultiple Object Tracking(MOT) ](https://qiita.com/Saigyo_HBK/items/1116b87a1bb202d1d680) でした．精度すごい…
 
 :::message
 この記事では，**Function Component** を取り扱っています．
