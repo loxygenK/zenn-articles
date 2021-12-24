@@ -3,7 +3,7 @@ title: "彼女はいないかもしれないけど，インターネットには
 emoji: "👨‍👩‍👧‍👦"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["event", "hackathon"]
-published: false
+published: true
 ---
 
 React + Gorilla で，**くりぼっち仲間を慰め合うクリスマスツリー** を作りました．PM 20:00 から開発がスタートし，今の時間は AM 4:37 です．[^1]
