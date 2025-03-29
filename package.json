@@ -5,5 +5,10 @@
   "license": "MIT",
   "dependencies": {
     "zenn-cli": "^0.1.99"
-  }
+  },
+  "scripts": {
+    "dev": "zenn",
+    "new": "zenn new:article"
+  },
+  "packageManager": "pnpm@10.6.5+sha256.47c8bca42b4b48534b5b1b28d573c506773937b02f68e52992fbd8269131c5c8"
 }
