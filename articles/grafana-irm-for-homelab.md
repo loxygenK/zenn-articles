@@ -29,9 +29,14 @@ Grafana (https://grafana.com/) は Observability ですが、ただダッシュ�
 - Grafana OSS（`grafana/grafana-enterprise` Docker イメージ）
   - Grafana Alerting ([doc](https://grafana.com/ja/products/cloud/alerting/)) ... メトリクス値を継続評価して、必要に応じてアラートを発火できる機能。
 - Grafana Cloud ([doc](https://grafana.com/products/cloud/)) ... 自分でサーバを立てなくても Grafana が使える!
-  - Grafana IRM ([doc](https://grafana.com/products/cloud/incident/?pg=irm)) ... Incident Response & Management 関連機能群。今回の主役!
+  - Grafana IRM ([doc](https://grafana.com/products/cloud/irm/)) ... Incident Response & Management 関連機能群。今回の主役!
     - Grafana OnCall ([doc](https://grafana.com/products/cloud/oncall/?pg=irm)) ... アラートを受信/ルーティングして、適切なユーザにエスカレートする。
     - Grafana Incident ([doc](https://grafana.com/products/cloud/incident/?pg=irm)) ... インシデント管理機能。
+
+:::message
+- OnCall と Incident は、2025/3 に 1 つの "IRM" に統合されたみたいです ([doc](https://grafana.com/blog/2025/03/11/oncall-management-incident-response-grafana-cloud-irm/))。公式ドキュメントだとまだ分かれている記述が多く見受けられますが、実際に Grafana を使う際は、OnCall と Incident の垣根は意識しなくても良さそうです。
+- 公式ドキュメントに OnCall *OSS* についての記述がありますが、OnCall OSS は 2025/7 現在メンテナンス状態で、2026/3 にアーカイブされるとのことです。（この記事では Grafana Cloud 上の IRM (旧名 OnCall) を使っているので関係なさそうですが）
+:::
 
 ### 無料枠について
 
