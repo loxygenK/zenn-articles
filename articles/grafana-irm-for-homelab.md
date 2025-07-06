@@ -34,15 +34,15 @@ Grafana (https://grafana.com/) は Observability ですが、ただダッシュ�
     - Grafana Incident ([doc](https://grafana.com/products/cloud/incident/?pg=irm)) ... インシデント管理機能。
 
 :::message
-- OnCall と Incident は、2025/3 に 1 つの "IRM" に統合されたみたいです ([doc](https://grafana.com/blog/2025/03/11/oncall-management-incident-response-grafana-cloud-irm/))。公式ドキュメントだとまだ分かれている記述が多く見受けられますが、実際に Grafana を使う際は、OnCall と Incident の垣根は意識しなくても良さそうです。
-- 公式ドキュメントに OnCall *OSS* についての記述がありますが、OnCall OSS は 2025/7 現在メンテナンス状態で、2026/3 にアーカイブされるとのことです。（この記事では Grafana Cloud 上の IRM (旧名 OnCall) を使っているので関係なさそうですが）
+- OnCall と Incident は、2025/3 に 1 つの "Grafana IRM" に統合されたみたいです ([doc](https://grafana.com/blog/2025/03/11/oncall-management-incident-response-grafana-cloud-irm/))。公式ドキュメントだとまだ分かれている記述が多く見受けられますが、実際に Grafana を使う際は、OnCall と Incident の垣根は意識しなくても良さそうです。
+- 公式ドキュメントに OnCall *OSS* についての記述がありますが、これは Grafana OSS とはもともと別コンテナで提供されていたものです。2025/7 現在メンテナンス状態で、2026/3 にアーカイブされるとのことです。この記事では Grafana Cloud IRM を使っているので関係ないです!
 :::
 
 ### 無料枠について
 
-2025/7 現在だと、Grafana Cloud 本体 も IRM も**ユーザー数単位での**課金（3 人まで無料）になっています。アラート数での課金などではないので、他人を入れない限りはお金はかからなそうです！なんなら核家族も一人子どもならギリ耐えます。
+2025/7 現在だと、Grafana Cloud 本体 も IRM も**ユーザー数単位での**課金（3 人まで無料）になっています。アラート数や、SMS/電話送信数での課金ではないようなので、他人を入れない限りはお金はかからなそうです！なんなら核家族も一人子どもならギリ耐えます。
 
-ただし、メトリクスをつなぐ場合（Data source から Prometheus をつなぐ、など）は、ちゃんと最適化をしないと一瞬で無料枠を超えて大変なことになります。最初 2 週間はトライアルがあるので仮に使用量が跳ねても（一敗）大丈夫ですが、もし Grafana Cloud をつなぐ際はご注意ください!
+ただし、メトリクスをつなぐ場合（Data source から Prometheus をつなぐ、など）は、ちゃんと最適化をしないと一瞬で無料枠を超えて大変なことになります。最初 2 週間はトライアルがあるので仮に使用量が跳ねても大丈夫ですが、もし Grafana Cloud をつなぐ際はご注意ください!
 
 ### 構成図
 
@@ -58,7 +58,7 @@ graph
             ds{{Data source}}
             cp{{Contact point}}
 
-            GA --> |アラートルール抵触| cp
+            GA --> |アラートルール条件合致| cp
         end
 
         P{{Prometheus}}
@@ -76,14 +76,14 @@ graph
     end
 
     subgraph Grafana Cloud
-        subgraph Grafana OnCall
+        subgraph Grafana IRM
             A{{Alertmanager<br>integration}}
             cp -.-> |設定| A
 
-            ES{Escalate<br>chain}
+            ES{Escalation<br>chain}
             A --> |トリガー| ES
         end
-        GI{{Grafana Incident}}
+        I{{Incident}}
     end
 
     S{{Slack}}
@@ -95,20 +95,20 @@ graph
     S --> F
     SMS --> F
 
-    F --> |発報/管理| GI
+    F --> |宣言/管理| I
 ```
 
 **Grafana が 2 つある点に注目してください**！それぞれ、以下のような役割を担っています。
 
 - デスクトップ PC 上で動いている、`grafana/grafana-enterprise` イメージ の Docker コンテナ（以下 "オンプレミス Grafana"）。
-  **Proemetheus からのデータ集約とアラート評価/発火**に使っています。
+  **Prometheus からのデータ集約とアラート評価/発火**に使っています。
 - Grafana Cloud 上のインスタンス（以下 "Grafana Cloud"）。
   オンプレミス Grafana からアラート発火を受信し、**各種サービスへの通知と対応状況管理**に使っています。
 
 このように分けている理由は 2 つあります。
 
-- **OSS の `grafana/grafana-enterprise` イメージでは提供されていない、Grafana Cloud 上用の機能がいくつか存在します**。OnCall や IRM がそれに該当するので、その機能を使うために Grafana Cloud を使っています。
-- Grafana Cloud とオンプレの Prometheus を繋いで、可視化まで Grafana Cloud ですることもできるのですが、**メトリクス量で usage が計算されるので、usage 削減のため**、オンプレミス Grafana から Grafana Cloud にアラートを転送する形で連携しています。
+- **OSS の `grafana/grafana-enterprise` イメージでは提供されていない、Grafana Cloud 上用の機能がいくつか存在します**。Grafana IRM がそれに該当するので、その機能を使うために Grafana Cloud を使っています。
+- Grafana Cloud とオンプレの Prometheus を繋いで、可視化まで Grafana Cloud ですることもできるのですが、**メトリクス量で使用量が計算される**ので、使用量削減のため、オンプレミス Grafana から Grafana Cloud にアラートを転送する形で連携しています。
 
 
 ### オンプレミス Grafana で設定しているアラート
@@ -117,12 +117,14 @@ graph
 
 ## 実際に動かしてみる
 
+構築済みの環境を実際に動かしてみます!
+
 :::message
-- 環境構築手順は後述しています。そっちを読みたい方はこちらから→ 
+- 環境構築手順は後述しています。そっちを読みたい方はこちらから→ [導入の仕方](#導入の仕方)
 - 2 環境の Grafana のスクショが出てきますが、ライトテーマはオンプレミス Grafana、ダークテーマは Grafana Cloud 上の画面です！
 :::
 
-インシデント発生 → アラート評価/発火 → 各種媒体への通知 → Grafana Incident での発報 → 対応/解決の流れを踏んでみます。**Python で 550,000,000 要素の配列 (`list(range(550_000_000))`) をアロケートして**、メモリをかなり圧迫してみます!
+インシデント発生 → アラート評価/発火 → 各種媒体への通知 → Grafana Incident での宣言 → 対応/解決の流れを踏んでみます。**Python で 550,000,000 要素の配列 (`list(range(550_000_000))`) をアロケートして**、メモリをかなり圧迫してみます!
 
 ### インシデント発生からアラート認知まで
 
@@ -132,7 +134,7 @@ Python で配列をアロケートすると、オンプレミス Grafana でア�
 
 ![この時点での、オンプレミス Grafana 上でのメモリ使用量の折れ線グラフ。80% を超えてから 15 秒後の時点で垂直の黄色線、45 秒後の時点で垂直の赤線が引かれている](/images/grafana-irm-for-homelab/image.png =400x)
 *黄色線と赤線は、それぞれアラートの Pending/Firing[^alert-state] への遷移があったタイミングです*
-[^alert-state]: アラートルールで、「この条件が満たされてから n 秒後に正式に発火する」というのを決めることができます。このアラートルールではそれを 30 秒後にしていて、「条件が満たされてるけど様子見してる」状態が pending、「n 秒立ってもまだ条件が満ちているので、正式ているに発火した」状態が firing です。
+[^alert-state]: アラートルールで、「この条件が満たされてから n 秒後に正式に発火する」というのを決めることができます。このアラートルールではそれを 30 秒後にしていて、「条件が満たされてるけど様子見してる」状態が pending、「n 秒立ってもまだ条件が満ちているので、正式に発火した」状態が firing です。
 
 オンプレミス Grafana 上の Alert Rules を見てみると、こちらでも発火されているのが確認できます。
 
@@ -148,7 +150,7 @@ Python で配列をアロケートすると、オンプレミス Grafana でア�
 
 上の画像を見ると「"PVE CT/VM OOM"」という alert group[^group-with-only-one-alert?] ができていることがわかります。タイトルをクリックすると、アラートの概要やオンプレミス Grafana へのリンクが見れます。
 
-[^group-with-only-one-alert?]: Grafana OnCall では、似たようなアラートがいっぱい鳴って通知があっぷあっぷになるのを防ぐために、アラームはグループ化されて管理されます。とはいいつつ、今回は 1 アラートしか発火されていないので、1 アラートだけのアラートグループができています
+[^group-with-only-one-alert?]: Grafana IRM では、似たようなアラートがいっぱい鳴って通知があっぷあっぷになるのを防ぐために、アラームはグループ化されて管理されます。とはいいつつ、今回は 1 アラートしか発火されていないので、1 アラートだけのアラートグループができています
 
 ![Grafana Cloud 上での、Alert Group の詳細画面。"#24 PVE CT/VM OOM (PVE) という名前](/images/grafana-irm-for-homelab/image-9.png =500x)
 
@@ -174,11 +176,11 @@ Python で配列をアロケートすると、オンプレミス Grafana でア�
 
 ---
 
-### アラートの認知からインシデント発報/解決まで
+### アラートの認知からインシデント宣言/解決まで
 
 今回は私が自分の手でインシデントを起こしたので最初からアラートの発火を知っていましたが、普段は気づかぬ間にアラートが燃えることがほとんどなので、**通常は Slack の通知で気づきます**。ここからはその体で、「Slack に通知が来てアラートの発火に今気づいた!」という状況を想定してアラートに対処してみます。
 
-#### アラートの認知からインシデント発報
+#### アラートの認知からインシデント宣言
 
 Slack 等の通知でアラートに気づいたら、メッセージ内に、燃えている Alert groups の詳細へのリンクがあるので、見に行って状況を確認します。
 
@@ -192,7 +194,7 @@ Alert の存在を認知したら、"Acknowledge" ボタンを押してとりあ
 ![先と同じ Alert group の詳細画面。ステータスが "Acknowledged" に代わって、"Acknowledge" ボタンが "Unacknowledge" になっている](/images/grafana-irm-for-homelab/image-10.png =350x)
 *ステータスが変わった*
 
-アラートに対する操作は終わったので、ここからインシデントを発報します！Alert groups の "Actions" ボタンから、"Declare incident" をクリックします。
+アラートに対する操作は終わったので、ここからインシデントを宣言します！Alert groups の "Actions" ボタンから、"Declare incident" をクリックします。
 
 ![前述した操作をした、先ほどの画面。"Actions" ボタンの下に、"Trigger webhook", "Declare incident", "Run Sift Investigation" の項目がある](/images/grafana-irm-for-homelab/image-11.png =400x)
 
@@ -200,13 +202,13 @@ Alert の存在を認知したら、"Acknowledge" ボタンを押してとりあ
 
 ![Declare Incident というタイトルのモーダル。フォームになっていて、いくつかフィールドが存在する。"What's going on?" には、インシデントの名前、"Description" には、現時点で分かっていることなど、共有しておきたいことを書ける。その他、重要度を設定できる "Severity"、インシデントのカテゴリ用の "Labels" などがある。フォームの一番下に、"Declare Incident" ボタンと "Cancel" ボタンがある。](/images/grafana-irm-for-homelab/image-12.png =350x)
 
-設定できたら、"Declare incident" を押してインシデントを発報します!
+設定できたら、"Declare incident" を押してインシデントを宣言します!
 
-#### インシデント発報から対応開始
+#### インシデント宣言から対応開始
 
-インシデントが発報されると、Slack に通知が飛んできます。設定していれば、勝手にインシデント用のチャンネルが作られます。
+インシデントが宣言されると、Slack に通知が飛んできます。設定していれば、勝手にインシデント用のチャンネルが作られます。
 
-![Slack 上のメッセージのスクリーンショット。"Grafana IRM" という名前のボットから、"PVE CT/VM OOM (PVE)" というタイトルと、インシデントが発報された旨の通知が来ている](/images/grafana-irm-for-homelab/image-13.png =300x)
+![Slack 上のメッセージのスクリーンショット。"Grafana IRM" という名前のボットから、"PVE CT/VM OOM (PVE)" というタイトルと、インシデントが宣言された旨の通知が来ている](/images/grafana-irm-for-homelab/image-13.png =300x)
 *Slack 上での通知。ここからインシデントページ (後述) や、Slack チャンネルに行ける*
 
 ![Slack 上の、新しく作られたチャンネルのスクリーンショット。チャンネル名は、"#incident-2025-07-06-pve-ct-vm-oom-pve"](/images/grafana-irm-for-homelab/image-14.png =600x)
@@ -214,7 +216,7 @@ Alert の存在を認知したら、"Acknowledge" ボタンを押してとりあ
 
 また、ブラウザ上ではインシデントページが確認できます。
 
-![Grafana Cloud 上のインシデントページ。左側のメインコンテンツと右側のメタデータ情報で画面が分かれている。左側に、先程フォームに入力したタイトルと説明文が表示されている他、発報からの経過時間、メッセージを投稿できるリッチテキストボックスや、インシデント発報等のインシデント対応経緯を時系列で確認できるタイムラインが表示されている。また、右側に、関係者一覧、残りタスク、関連ページなどが表示されている。](/images/grafana-irm-for-homelab/image-15.png =550x)
+![Grafana Cloud 上のインシデントページ。左側のメインコンテンツと右側のメタデータ情報で画面が分かれている。左側に、先程フォームに入力したタイトルと説明文が表示されている他、宣言からの経過時間、メッセージを投稿できるリッチテキストボックスや、インシデント宣言等のインシデント対応経緯を時系列で確認できるタイムラインが表示されている。また、右側に、関係者一覧、残りタスク、関連ページなどが表示されている。](/images/grafana-irm-for-homelab/image-15.png =550x)
 
 このページで、インシデント対応にかかる情報や進捗状況、関係者などを管理することになります。今回は、Commander[^incident-role] を私、Investigator[^incident-role] も私に設定してみました（私しかいないので）。また、なんでこうなってるのかを調べるタスクも生やして私にアサインしてみました。
 [^incident-role]: https://grafana.com/docs/grafana-cloud/alerting-and-irm/irm/configure/incident-settings/roles/#pre-configured-incident-roles
@@ -265,8 +267,8 @@ $ kill 4300
 見ていただいた通り、Grafana IRM は、複数人でのインシデント対応において、情報伝達を自動化したり適切化するための機能が豊富に備わっています。そう思うと、一人で使うのが微妙かとも思えますが、プラットフォームを触るのが一人だけでも嬉しい理由がそれなりにあります!
 
 - **通知で気付ける**
-  アラート発火時に Slack や SMS その他いろいろな媒体で通知を遅れるので、問題が起こった際に早期発見しやすいです。[^oncall-not-needed-technically]
-  [^oncall-not-needed-technically]: Alerting だけでも Webhook を叩くことはできるので、通知がほしいだけなら実は OnCall いらないです。でも SMS が送れるので、それが必要なら OnCall を使う理由になりそう
+  アラート発火時に Slack や SMS その他いろいろな媒体で通知を送れるので、問題が起こった際に早期発見しやすいです。[^oncall-not-needed-technically]
+  [^oncall-not-needed-technically]: Alerting だけでも Webhook を叩くことはできるので、通知がほしいだけなら実は Grafana IRM いらないです。でも SMS が送れるので、それが必要なら IRM を使う理由になりそう
 
 - **あとから見返せる**
   特に個人だと、何か問題が起こった際の対応状況は、普通一回解決したら忘れることが多いかと思います。Grafana IRM を運用すると、時系列付きで対応状況を残せるので、苦難をあとから見返せますし、後から振り返って「なんで急にああなったんだろう……」と冷静に解析することもできます。記事に起こす際にも役立ちそうです!
@@ -290,11 +292,10 @@ $ kill 4300
 Grafana IRM の設定は、かなり柔軟にできる一方で、単純なルールでも設定が必要な項目がそれなりにあります。何を設定する必要があるかと、参考になるドキュメントへのリンクを掲載します!
 
 :::details TL:DR;
-1. IRM で **Alertmanager Integration** を作る
-2. Grafana Cloud の Profiles → IRM で、**通知先と Notification rules** を設定する。この画面で Slack を Connect すると楽
-3. **Escalation chain** を作って、自分に通知が飛ぶように設定する
-4. Alertmanager Integration の詳細画面で、この **Escalation chain を紐づける**
-5. オンプレ側でアラートルールの **Contact point (Webhook 形式) を Integration の HTTP Endpoint URL に**向ける。
+1. Grafana Cloud の Profiles → IRM で、**通知先と Notification rules** を設定する。この画面で Slack を Connect すると楽
+2. **Escalation chain** を作って、自分に通知が飛ぶように設定する
+3. IRM で **Alertmanager Integration** を作って、**Escalation chain を紐づける**
+4. オンプレ側でアラートルールの **Contact point を、Integration の HTTP Endpoint URL に向けた Webhook Contact Point**に設定する
 :::
 
 :::message
@@ -315,34 +316,9 @@ https://grafana.com/products/cloud/?pg=hp&plcmt=hero-slide-1
 オンプレから Cloud にデータをコピーするように勧められますが、無料枠の都合からあまりおすすめしないです。"Skip setup →" でスキップできます
 :::
 
-### オンプレミス Grafana と Grafana Cloud をつなぐ
-
-以下の記事の手順を踏むと、両者をつなぐことができます。
-
-https://grafana.com/docs/grafana-cloud/alerting-and-irm/irm/configure/integrations/integration-reference/oncall/grafana-alerting/#configure-external-grafana-alerting-from-other-grafana-instance
-
-:::message
-Escalation chain をまだ作ってないので "⚠️ Not selected" が表示されていますが、後で解決します。記事内の NOTE 部分も後で解決します!
-:::
-
-以下の部分を作っています↓
-
-```mermaid
-graph LR
-
-  subgraph Grafana Cloud
-    subgraph Alertmanager Integration
-      AMh((HTTP<br>E/P))
-    end
-  end
-
-  subgraph On-premise Grafana
-    CP{{Contact point}}
-    CP --> |Webhook| AMh
-  end
-```
-
 ### [Cloud 側] 通知先を設定する
+
+最初に自分個人の通知設定をします。
 
 #### Notification channel
 右上の自分のアイコン → Profiles → IRM から、通知先を設定することができます。
@@ -360,12 +336,9 @@ graph LR
 [こちらの doc](https://grafana.com/docs/oncall/latest/configure/integrations/references/slack/)に詳しい説明がありますが、Notification channel の Slack 欄で "Install" を押すと、Slack App のインストールと Slack ユーザ名の連携が同時にできるのでめちゃくちゃ楽です。
 
 
-### [Cloud 側] Escalation Chain を作ってアタッチする
+### [Cloud 側] Escalation Chain を作る
 
-通知が来たときに、通知の内容をもとにエスカレート先のユーザ/チームを決定することができます。その設定をします！
-
-#### Escalation chain
-まず、誰に通知を飛ばすか、等の通知送信の挙動を設定します。今回は個人利用なので、default の Escalation chain を作って、自分に notification を飛ばすようにします。
+通知が来たときに、通知の内容をもとにエスカレートの挙動（通知先のユーザ/チーム等）を決定することができます。ここでは、その挙動の部分を作成します。今回は個人利用なので、自分に notification を飛ばすようにします！
 
 Alerts & IRM → IRM → Escalation chains から、"+ New escalation chain" で新しく Escalation chain を作成します。"Add escalation step..." から、"Notify users"、そして自分を指定すれば Escalation chain の設定が完了です!
 
@@ -375,14 +348,30 @@ Alerts & IRM → IRM → Escalation chains から、"+ New escalation chain" で
 Escalation chain は、アラートが Resolve / Dismiss / Acknowledge されると止まるそうです。なので、こちらでも「N 分経ってもアラートが処理されなかったら〇〇をする」という設定ができそうです（e.g. 別の人に通知する、とか）。
 :::
 
-#### Integration と Escalation chain をひっつける
+現時点だと、こんな感じの構成になっています。Escalation chain をトリガーするものがまだないので、まだ動きません。
 
-先ほど作った Alertmanager Integration とこの Escalation chain をひっつけて、アラートが発火したときに Escalation chain が発火されるようにします。
+```mermaid
+graph LR
+  subgraph Grafana Cloud
+    EC{Escalation<br>Chain}
+  end
 
-Alerts & IRM → IRM → Integration から、先程作った Integration を開きます。一番下の項目をクリックすると、Escalation chain を選択するところが出てきます。ここで先ほど作った Escalation chain を選択します。これでひっつきます!
+  EC --> S{{Slack}}
+  EC --> SMS{{SMS}}
+```
+
+### オンプレミス Grafana と Grafana Cloud をつなぐ
+
+動画でわかりやすく説明されてる、公式ブログの記事があります!
+
+https://grafana.com/blog/2025/06/03/how-to-send-alerts-from-grafana-oss-to-grafana-cloud-irm/
+
+こちらの手順に従って、Integration を作って Escalation chain を紐づけます。
+
+動画じゃない方が良ければ、[こちらのドキュメンテーション](https://grafana.com/docs/grafana-cloud/alerting-and-irm/irm/configure/integrations/integration-reference/oncall/grafana-alerting/#configure-external-grafana-alerting-from-other-grafana-instance)を参考にしてください。なお、このドキュメンテーションの手順に従って作る場合は、integration 作成後に最後の項目をクリックして Escalation Chain の紐づけが必要です!
 
 :::message
-この画面で、"Add route" というボタンがありますが、これを使うと通知の内容に従って Escalation chain を変更することができます。ここでは詳しく触れませんが、個人利用でも Default / Important の振り分けなどができそうです!
+Integration の画面で、"Add route" というボタンがありますが、これを使うと通知の内容に従って Escalation chain を変更することができます。ここでは詳しく触れませんが、個人利用でも Default / Important の振り分けなどができそうです!
 :::
 
 ここまで行くと、こういう構造になっています↓
@@ -410,7 +399,7 @@ graph LR
 ### [オンプレミス側] アラートの Contact 先を Cloud に向ける
 
 アラートがすでにある場合は、Grafana Cloud に向けたいアラートルールの編集画面に行きます。 アラートがまだなければ、[こちらの記事](https://grafana.com/docs/grafana/latest/alerting/alerting-rules/link-alert-rules-to-panels/)を参考にしてみてください!
-どちらの場合でも、Notification を設定する項目があるはずです。ここで、Contact point を先程作った Contact point に向けて、アラートを保存すると、そのアラートは Grafana Cloud に転送されるようになります!
+どちらの場合でも、作成/編集の画面で Notification を設定する項目があるはずです。ここで、Contact point を先程作った Contact point に向けて、アラートを保存すると、そのアラートは Grafana Cloud に転送されるようになります!
 
 ---
 
