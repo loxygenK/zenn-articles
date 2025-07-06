@@ -5,14 +5,14 @@ title: "個人で Grafana IRM (Incident Response and Management) をお金をか
 emoji: "👩‍🚒"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["grafana", "grafanacloud", "irm"]
-published: false
+published: true
 ---
 
 |![Content is written by human](https://img.shields.io/badge/written_by-human-blue)|![Content is reviewed by AI](https://img.shields.io/badge/reviewed_by-AI-8A2BE2)|
 | ---- | ---- |
 
 
-Grafana (https://grafana.com/) は Observability ですが、ただダッシュボードを表示できるだけではなく、アラート機能やインシデント管理など、メトリクスを利活用した様々な機能が備わっています。その中の **Grafana IRM** を、家のデスクトップ PC（Proxmox Virtual Environment 導入機） を対象に試してみているので、それについての記事です!
+Grafana (https://grafana.com/) と聞くと、「可視化できるやつだよな？イケてるダッシュボード作れるやつ……」と思い浮かぶかもしれませんが、ただダッシュボードを表示できるだけではなく、アラート機能やインシデント管理など、メトリクスを利活用した様々な機能が備わっています。その中の **Grafana IRM** を、家のデスクトップ PC（Proxmox Virtual Environment 導入機） を対象に試してみているので、それについての記事です!
 
 ## 本記事のスコープ
 
@@ -29,7 +29,7 @@ Grafana (https://grafana.com/) は Observability ですが、ただダッシュ�
 - Grafana OSS（`grafana/grafana-enterprise` Docker イメージ）
   - Grafana Alerting ([doc](https://grafana.com/ja/products/cloud/alerting/)) ... メトリクス値を継続評価して、必要に応じてアラートを発火できる機能。
 - Grafana Cloud ([doc](https://grafana.com/products/cloud/)) ... 自分でサーバを立てなくても Grafana が使える!
-  - Grafana IRM ([doc](https://grafana.com/products/cloud/irm/)) ... Incident Response & Management 関連機能群。今回の主役!
+  - Grafana IRM ([doc](https://grafana.com/products/cloud/irm/)) ... Incident Response & Management 関連機能。今回の主役!
     - Grafana OnCall ([doc](https://grafana.com/products/cloud/oncall/?pg=irm)) ... アラートを受信/ルーティングして、適切なユーザにエスカレートする。
     - Grafana Incident ([doc](https://grafana.com/products/cloud/incident/?pg=irm)) ... インシデント管理機能。
 
@@ -134,7 +134,7 @@ Python で配列をアロケートすると、オンプレミス Grafana でア�
 
 ![この時点での、オンプレミス Grafana 上でのメモリ使用量の折れ線グラフ。80% を超えてから 15 秒後の時点で垂直の黄色線、45 秒後の時点で垂直の赤線が引かれている](/images/grafana-irm-for-homelab/image.png =400x)
 *黄色線と赤線は、それぞれアラートの Pending/Firing[^alert-state] への遷移があったタイミングです*
-[^alert-state]: アラートルールで、「この条件が満たされてから n 秒後に正式に発火する」というのを決めることができます。このアラートルールではそれを 30 秒後にしていて、「条件が満たされてるけど様子見してる」状態が pending、「n 秒立ってもまだ条件が満ちているので、正式に発火した」状態が firing です。
+[^alert-state]: アラートルールで、「この条件が満たされてから n 秒後に正式に発火する」というのを決めることができます。このアラートルールではそれを 30 秒後にしていて、「条件が満たされてるけど様子見してる」状態が pending、「n 秒経ってもまだ条件が満ちているので、正式に発火した」状態が firing です。
 
 オンプレミス Grafana 上の Alert Rules を見てみると、こちらでも発火されているのが確認できます。
 
@@ -266,21 +266,21 @@ $ kill 4300
 
 見ていただいた通り、Grafana IRM は、複数人でのインシデント対応において、情報伝達を自動化したり適切化するための機能が豊富に備わっています。そう思うと、一人で使うのが微妙かとも思えますが、プラットフォームを触るのが一人だけでも嬉しい理由がそれなりにあります!
 
-- **通知で気付ける**
-  アラート発火時に Slack や SMS その他いろいろな媒体で通知を送れるので、問題が起こった際に早期発見しやすいです。[^oncall-not-needed-technically]
-  [^oncall-not-needed-technically]: Alerting だけでも Webhook を叩くことはできるので、通知がほしいだけなら実は Grafana IRM いらないです。でも SMS が送れるので、それが必要なら IRM を使う理由になりそう
+#### 通知で気付ける
+アラート発火時に Slack や SMS その他いろいろな媒体で通知を送れるので、問題が起こった際に早期発見しやすいです。[^oncall-not-needed-technically]
+[^oncall-not-needed-technically]: Alerting だけでも Webhook を叩くことはできるので、通知がほしいだけなら実は Grafana IRM いらないです。でも SMS が送れるので、それが必要なら IRM を使う理由になりそう
 
-- **あとから見返せる**
+#### あとから見返せる
   特に個人だと、何か問題が起こった際の対応状況は、普通一回解決したら忘れることが多いかと思います。Grafana IRM を運用すると、時系列付きで対応状況を残せるので、苦難をあとから見返せますし、後から振り返って「なんで急にああなったんだろう……」と冷静に解析することもできます。記事に起こす際にも役立ちそうです!
   
-- **使いやすい: 自然にログを残せる/管理しやすい**
+#### 使いやすい: 自然にログを残せる/管理しやすい
   Grafana IRM は、`Slack で気づく → IRM でインシデント対応管理` の流れが自然に踏めるので、ログを非常に取りやすいです! 今回の記事ではあまり紹介していませんが、タグを付けて管理とかもできるので、後から見返しやすいです
 
-- **Grafana との連携が楽**
-  Grafana の機能なので当たり前ですが、**Grafana と繋がっていれば IRM を使うことができます!** 重要なのは、Grafana 自体はただのメトリクス活用ツールで、監視対象は電子機器に限られないということです。例えば、観葉植物の水やりを Grafana で管理しているなら、**センサーの値が途切れてアラートが来たと思ったら鉢が倒れてる！！** みたいなインシデントを管理できるかもしれません（嬉しいかはさておき…… 可能性の話です）
+#### Grafana との連携が楽
+Grafana の機能なので当たり前ですが、**データソースが既に Grafana と繋がっていれば、そのデータで IRM を使うことができます!** 重要なのは、Grafana 自体はただのメトリクス活用ツールで、監視対象は電子機器に限られないということです。例えば、観葉植物の水やりを Grafana で管理しているなら、**センサーの値が途切れてアラートが来たと思ったら鉢が倒れてる！！** みたいなインシデントを管理できるかもしれません（嬉しいかはさておき…… 可能性の話です）
 
-- **たのしい**
-  1 人でこれやるのはごっこ遊びの側面も大きいです。一人でやるなら Commander/Investigator の設定とかいらないですし……
+#### たのしい
+1 人でこれやるのはごっこ遊びの側面も大きいです。一人でやるなら Commander/Investigator の設定とかいらないですし……
 
 ## 導入の仕方
 
@@ -310,7 +310,7 @@ IRM を利用するために、Cloud へのアカウント登録が必要です�
 
 https://grafana.com/products/cloud/?pg=hp&plcmt=hero-slide-1
 
-アカウントを作ると、Grafana stack を作る画面が出てきます。少し待つと、Grafana Cloud の画面が出てきます！
+アカウントを作ると、Grafana stack を作る画面が出てきます。作成開始して少し待つと、Grafana Cloud の画面が出てきます！
 
 :::message
 オンプレから Cloud にデータをコピーするように勧められますが、無料枠の都合からあまりおすすめしないです。"Skip setup →" でスキップできます
@@ -330,15 +330,20 @@ https://grafana.com/products/cloud/?pg=hp&plcmt=hero-slide-1
 
 ……みたいな設定ができます。[詳細/ベストプラクティスはこちら](https://grafana.com/docs/grafana-cloud/alerting-and-irm/irm/manage/notifications/notification-rules/)を参考にしてください。
 
+:::message
+後述する Alertmanager Integration で Route を設定すると、通知内容に応じて通知を Default/Important に振り分けることができます。
+一方、今回 Route は設定しないので、すべての通知が Default に飛んできます。そのため、今回の設定内容だと Important 側の rules は使わないです。
+:::
+
 #### Slack Integration
 また、Slack の機能を使いたければその設定が必要です。個人の Slack ワークスペースを作っていなければ、ここで作ってしまいましょう!
 
-[こちらの doc](https://grafana.com/docs/oncall/latest/configure/integrations/references/slack/)に詳しい説明がありますが、Notification channel の Slack 欄で "Install" を押すと、Slack App のインストールと Slack ユーザ名の連携が同時にできるのでめちゃくちゃ楽です。
+Slack Integration の設定は、[こちらの doc](https://grafana.com/docs/oncall/latest/configure/integrations/references/slack/) のやり方でもできますが、Notification channel の Slack 欄で "Install" を押すと、Slack App のインストールと Slack ユーザ名の連携が同時にできるので楽です。
 
 
 ### [Cloud 側] Escalation Chain を作る
 
-通知が来たときに、通知の内容をもとにエスカレートの挙動（通知先のユーザ/チーム等）を決定することができます。ここでは、その挙動の部分を作成します。今回は個人利用なので、自分に notification を飛ばすようにします！
+通知が来たときに、通知の内容をもとにエスカレートの挙動（通知先のユーザ/チーム等）を決定することができます。ここでは、その挙動の部分を作成します。今回は個人利用なので、自分に通知を飛ばすようにします！
 
 Alerts & IRM → IRM → Escalation chains から、"+ New escalation chain" で新しく Escalation chain を作成します。"Add escalation step..." から、"Notify users"、そして自分を指定すれば Escalation chain の設定が完了です!
 
@@ -368,10 +373,10 @@ https://grafana.com/blog/2025/06/03/how-to-send-alerts-from-grafana-oss-to-grafa
 
 こちらの手順に従って、Integration を作って Escalation chain を紐づけます。
 
-動画じゃない方が良ければ、[こちらのドキュメンテーション](https://grafana.com/docs/grafana-cloud/alerting-and-irm/irm/configure/integrations/integration-reference/oncall/grafana-alerting/#configure-external-grafana-alerting-from-other-grafana-instance)を参考にしてください。なお、このドキュメンテーションの手順に従って作る場合は、integration 作成後に最後の項目をクリックして Escalation Chain の紐づけが必要です!
+動画じゃない方が良ければ、[こちらのドキュメンテーション](https://grafana.com/docs/grafana-cloud/alerting-and-irm/irm/configure/integrations/integration-reference/oncall/grafana-alerting/#configure-external-grafana-alerting-from-other-grafana-instance)を参考にしてください。なお、このドキュメンテーションの手順に従って作る場合は、Alertmanager integration 作成後の詳細画面で、最後の項目をクリックして Escalation Chain の紐づけが必要です!
 
 :::message
-Integration の画面で、"Add route" というボタンがありますが、これを使うと通知の内容に従って Escalation chain を変更することができます。ここでは詳しく触れませんが、個人利用でも Default / Important の振り分けなどができそうです!
+Alertmanager Integration 作成後の詳細画面に "Add route" というボタンがあります。これを使うと通知の内容に従って Escalation chain を変更することができます。ここでは詳しく触れませんが、別々の Escalation Chain を作って設定することで Default / Important の振り分けやその他いろいろな切り分けができるようになります!
 :::
 
 ここまで行くと、こういう構造になっています↓
